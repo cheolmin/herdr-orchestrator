@@ -297,6 +297,14 @@ Use short agent IDs like "agent-a", "agent-b", etc. Set the first wave's status 
 
 ### 6c. Generate agent prompt files
 
+First get the herdr name of every agent (needed for the Messaging section of each prompt):
+
+```bash
+bash "$PLUGIN_ROOT/scripts/agent-names.sh" "[orch-dir]"
+```
+
+It prints `<agent-id> <herdr-name>` lines. Use them verbatim.
+
 For EACH agent, create a prompt file at `{orch-dir}/{id}-prompt.md` with:
 
 ```markdown
@@ -324,14 +332,22 @@ Excluded files (you MUST NOT modify these):
 ## Your Mission
 [Detailed subtask description with specific steps]
 
-## Reporting to the orchestrator
-Your orchestrator is the herdr agent named `orch-main`. Your result file is the main report. To send it a short note (a blocker, a question, or "done"), run in bash:
+## Messaging (herdr)
+Your orchestrator is the herdr agent `orch-main`. Your teammates in this orchestration and their herdr names:
+[One line per OTHER agent, from agent-names.sh: `- [id] ([role]) = [herdr-name]`]
+
+Send a short message from bash:
 
 ```bash
-"$HERDR_BIN_PATH" agent prompt orch-main "<one short line>"
+"$HERDR_BIN_PATH" agent prompt <name> "<one short line>"
 ```
 
-If `$HERDR_BIN_PATH` is empty, use `herdr`. Message only `orch-main` and only about this mission. Use herdr for messaging; do not use any other coordinator or messaging tool.
+If `$HERDR_BIN_PATH` is empty, use `herdr`. Rules:
+- Message `orch-main` for: a blocker, a question, an out-of-zone file you need, or "done".
+- Message a teammate directly only for names/formats you share (see the Shared Contract). Say who you are: `"agent-a: ..."`.
+- A message you receive arrives as a normal user message in your input. If it asks something, answer it the same way; if it is only information, use it and continue. Do not reply to a pure FYI.
+- Keep every message to one line. Put long content in a file and send its path.
+- Use herdr for messaging; do not use any other coordinator or messaging tool. Your result file is still the main report.
 
 ## When You Finish
 Create your result file at: [orch-dir]/[id]-result.md
@@ -407,7 +423,14 @@ Before entering the loop, note how the user sees progress:
 
 ### Messages from workers
 
-Workers may send a short note with `herdr agent prompt orch-main "..."`. It arrives as a normal user message in your input. Treat it as a status or question from that worker: answer a question with `herdr agent prompt <worker-name> "..."` (worker names are in state.json under `agentName`), and do not start new work because of it. To check a worker yourself: `herdr agent read <name> --source recent-unwrapped --lines 60`.
+Workers send a short note with `herdr agent prompt orch-main "..."`. It arrives as a normal user message. Each message starts with the sender (for example `agent-b: ...`). Handle it by type:
+
+- **Done / FYI**: note it. Do not reply and do not start new work.
+- **Question or blocker**: answer the worker with `herdr agent prompt <worker-name> "<one line>"` (names are in state.json under `agentName`). If it needs a file outside the worker's zone, decide: grant it in your reply, or give the file to another worker.
+- **Worker-to-worker**: workers may message each other. You do not need to relay.
+- A worker is "working" again after you message it. Wait for it with `wait-wave.sh` again before moving on.
+
+You can also look at a worker yourself: `herdr agent read <name> --source recent-unwrapped --lines 60`.
 
 When you call herdr yourself, use the plugin's resolver, because `herdr` may not be on PATH:
 
