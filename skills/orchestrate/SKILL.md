@@ -259,6 +259,7 @@ Write `state.json` using the Write tool. Schema:
   "workspaceId": null,
   "dashboardPaneId": null,
   "workerCmd": null,
+  "mainAgent": null,
   "useWorktrees": false,
   "waves": [
     {
@@ -296,7 +297,7 @@ Use short agent IDs like "agent-a", "agent-b", etc. Set the first wave's status 
 
 ### 6c. Generate agent prompt files
 
-For EACH agent, create a prompt file at `{orch-dir}/agent-{id}-prompt.md` with:
+For EACH agent, create a prompt file at `{orch-dir}/{id}-prompt.md` with:
 
 ```markdown
 # Mission: [subtask label]
@@ -323,8 +324,17 @@ Excluded files (you MUST NOT modify these):
 ## Your Mission
 [Detailed subtask description with specific steps]
 
+## Reporting to the orchestrator
+Your orchestrator is the herdr agent named `orch-main`. Your result file is the main report. To send it a short note (a blocker, a question, or "done"), run in bash:
+
+```bash
+"$HERDR_BIN_PATH" agent prompt orch-main "<one short line>"
+```
+
+If `$HERDR_BIN_PATH` is empty, use `herdr`. Message only `orch-main` and only about this mission. Use herdr for messaging; do not use any other coordinator or messaging tool.
+
 ## When You Finish
-Create your result file at: [orch-dir]/agent-[id]-result.md
+Create your result file at: [orch-dir]/[id]-result.md
 
 Use this format:
 ### Summary
@@ -363,7 +373,13 @@ This script:
 4. Claude starts in **interactive mode with full TUI** — the prompt auto-submits and Claude begins working immediately
 5. The user can watch agents in real-time by clicking their pane tabs, and can type into any agent to intervene
 
-After spawning, verify agents are running:
+Right after spawning Wave 1, open the dashboard at the bottom (once per orchestration):
+
+```bash
+bash "$PLUGIN_ROOT/scripts/open-dashboard.sh"
+```
+
+Then verify agents are running:
 ```bash
 herdr agent list
 ```
@@ -398,6 +414,17 @@ Before entering the loop, note how the user sees progress:
   ```
   Call it ONCE after spawning each wave, and ONCE after each wave completes. Do not call it inside the monitoring loop (that would spam the session). If the user asks "how's it going", you can also call it then.
 
+### Messages from workers
+
+Workers may send a short note with `herdr agent prompt orch-main "..."`. It arrives as a normal user message in your input. Treat it as a status or question from that worker: answer a question with `herdr agent prompt <worker-name> "..."` (worker names are in state.json under `agentName`), and do not start new work because of it. To check a worker yourself: `herdr agent read <name> --source recent-unwrapped --lines 60`.
+
+When you call herdr yourself, use the plugin's resolver, because `herdr` may not be on PATH:
+
+```bash
+source "$PLUGIN_ROOT/scripts/orchestration-state.sh"   # defines herdr() from HERDR_BIN_PATH
+herdr agent list
+```
+
 ### With herdr (wait-based monitoring):
 
 After spawning Wave N agents, block until the whole wave settles:
@@ -413,7 +440,7 @@ This runs `herdr agent wait <name>` per agent (settled = `idle`, `done` or `bloc
 
 **When ALL agents in the current wave are settled:**
 
-1. Read each agent's result file: `[orch-dir]/agent-[id]-result.md`
+1. Read each agent's result file: `[orch-dir]/[id]-result.md`
 2. Report results to the user: which agents succeeded, which failed, what they produced
 3. If there are more waves:
    a. Generate prompt files for Wave N+1 (inject previous wave results)

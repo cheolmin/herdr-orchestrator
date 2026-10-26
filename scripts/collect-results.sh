@@ -20,7 +20,8 @@ for i in $(seq 0 $((WAVE_COUNT - 1))); do
   node "$JSON_TOOL" query "$ORCH_DIR/state.json" wave-agent-ids "$i" | while IFS= read -r agent_id; do
     [ -z "$agent_id" ] && continue
     LABEL=$(node "$JSON_TOOL" query "$ORCH_DIR/state.json" agent-label "$agent_id" 2>/dev/null)
-    RESULT_FILE="$ORCH_DIR/agent-${agent_id}-result.md"
+    RESULT_FILE="$ORCH_DIR/${agent_id}-result.md"
+    [ -f "$RESULT_FILE" ] || RESULT_FILE="$ORCH_DIR/agent-${agent_id}-result.md"
 
     echo "### $LABEL"
     echo ""

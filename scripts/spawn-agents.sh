@@ -33,6 +33,14 @@ safe_name() {
   printf '%s' "$n" | cut -c1-31
 }
 
+# Name the orchestrator's own agent so workers can message it.
+MAIN_NAME="${HERDR_MAIN_NAME:-orch-main}"
+if [ -n "${HERDR_PANE_ID:-}" ]; then
+  herdr agent rename "$HERDR_PANE_ID" "$MAIN_NAME" >/dev/null 2>&1 || true
+fi
+update_state "$ORCH_DIR" '.mainAgent' "$MAIN_NAME" >/dev/null 2>&1 || true
+HERDR_BIN_UNIX="$(cygpath -u "${HERDR_BIN_PATH:-herdr}" 2>/dev/null || printf '%s' "${HERDR_BIN_PATH:-herdr}")"
+
 # Start from the orchestrator pane; split the most recent new pane each time,
 # alternating direction so panes stay usable.
 TARGET="${HERDR_PANE_ID:-}"
@@ -43,7 +51,9 @@ while IFS= read -r agent; do
   AGENT_ID=$(parse_json "$agent" '.id')
   AGENT_LABEL=$(parse_json "$agent" '.label')
   NAME=$(safe_name "o${SHORT}-${AGENT_ID}")
-  PROMPT_FILE="$ORCH_DIR/agent-${AGENT_ID}-prompt.md"
+  # Agent ids already look like "agent-a"; the skill writes {id}-prompt.md.
+  PROMPT_FILE="$ORCH_DIR/${AGENT_ID}-prompt.md"
+  [ -f "$PROMPT_FILE" ] || PROMPT_FILE="$ORCH_DIR/agent-${AGENT_ID}-prompt.md"
 
   SPLIT_ARGS=(pane split --direction "$DIR" --cwd "$CWD" --no-focus)
   if [ -n "$TARGET" ]; then SPLIT_ARGS+=(--pane "$TARGET"); else SPLIT_ARGS+=(--current); fi
@@ -103,7 +113,7 @@ while IFS= read -r agent; do
 
   # Short pointer prompt: the full mission lives in the prompt file.
   # No --wait here: wait-wave.sh waits for the whole wave afterwards.
-  PROMPT="Read the file $PROMPT_FILE and execute the mission described there exactly. Write your result file as instructed."
+  PROMPT="Read the file $PROMPT_FILE and execute the mission described there exactly. Write your result file as instructed. Your orchestrator agent is named '$MAIN_NAME'. To message it, run in bash: \"$HERDR_BIN_UNIX\" agent prompt $MAIN_NAME \"<short message>\" . Use only herdr for messaging; do not use any other coordinator tool."
   herdr agent prompt "$NAME" "$PROMPT" >/dev/null 2>&1
 
   echo "Spawned $AGENT_ID ($AGENT_LABEL) as '$NAME' in pane $PANE_ID"

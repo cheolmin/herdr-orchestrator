@@ -13,8 +13,15 @@ while IFS= read -r agent; do
   ID=$(parse_json "$agent" '.id')
   NAME=$(parse_json "$agent" '.agentName')
   [ -z "$NAME" ] || [ "$NAME" = "null" ] && continue
-  # Give the agent a moment to leave its initial idle state, then wait for it to settle.
-  sleep 3
+  # A prompt just sent leaves the agent "idle" for a moment. Wait until it is seen
+  # working (max 20s), then wait for it to settle again.
+  for _ in $(seq 1 20); do
+    herdr agent get "$NAME" 2>&1 | grep -q '"agent_status":"working"' && break
+    # Already finished before we looked: result file exists.
+    RF=$(parse_json "$agent" '.resultFile')
+    [ -n "$RF" ] && [ "$RF" != "null" ] && [ -f "$RF" ] && break
+    sleep 1
+  done
   herdr agent wait "$NAME" --timeout "$TIMEOUT" >/dev/null 2>&1
   RAW=$(herdr agent get "$NAME" 2>&1)
   # Response shape is not pinned: take the first "agent_status" value anywhere.
@@ -27,3 +34,9 @@ while IFS= read -r agent; do
   fi
   echo "$ID ($NAME): $STATE"
 done < <(node "$JSON_TOOL" query "$ORCH_DIR/state.json" wave-agents-each "$WAVE_IDX")
+
+# Mark the wave complete when every agent settled without blocking.
+if node "$JSON_TOOL" query "$ORCH_DIR/state.json" wave-complete "$WAVE_IDX" 2>/dev/null | grep -q true; then
+  update_state "$ORCH_DIR" ".waves[$WAVE_IDX].status" "complete"
+  echo "wave $WAVE_IDX: complete"
+fi
