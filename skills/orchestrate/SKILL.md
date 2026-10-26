@@ -221,9 +221,9 @@ Wave 3 (after Wave 2) — [description]
     Allowed files: [list]
     Excluded files: [list]
 
-Options:
-  --worktree: Isolate each agent in a git worktree (default: no)
-  --no-review: Skip the automated reviewer (default: review enabled)
+Options (say the word to change them):
+  dashboard: off (default) — a live dashboard pane at the bottom; say "dashboard" to turn it on
+  review: on (default) — an independent reviewer agent checks the result; say "no review" to skip it
 ```
 
 Ask the user: **"Validate this plan? (yes / adjust / cancel)"**
@@ -234,68 +234,51 @@ Wait for user approval. If they want adjustments, modify the plan and re-present
 
 Once the user validates:
 
-### 6a. Generate orchestration ID
+### 6a. Write the plan file
 
-```bash
-ORCH_ID="orch-$(date +%s | tail -c 7)"
-echo $ORCH_ID
-```
+Write the plan as JSON with the Write tool to `${TMPDIR:-/tmp}/herdr-plan-<random>.json` (any new file name). Do not hand-write state.json and do not use shell heredocs for it.
 
-### 6b. Create orchestration directory and state file
-
-Create the directory:
-```bash
-mkdir -p "${TMPDIR:-/tmp}/herdr-orch-$ORCH_ID"
-```
-
-Write `state.json` using the Write tool. Schema:
 ```json
 {
-  "id": "orch-XXXXXX",
-  "task": "the user's task description",
-  "status": "running",
-  "startedAt": "ISO-8601 UTC timestamp",
-  "cwd": "project working directory",
-  "workspaceId": null,
-  "dashboardPaneId": null,
-  "workerCmd": null,
-  "mainAgent": null,
-  "useWorktrees": false,
+  "task": "the user's task description, one line",
+  "cwd": "project working directory (forward slashes)",
+  "workerCmd": "ccc-sonnet-skip",
+  "review": true,
+  "dashboard": false,
   "waves": [
-    {
-      "index": 0,
-      "status": "running",
-      "blockedBy": [],
-      "agents": [
-        {
-          "id": "agent-a",
-          "label": "Subtask label",
-          "subtask": "Full subtask description",
-          "files": ["allowed/file/paths"],
-          "excludeFiles": ["excluded/patterns/*"],
-          "paneId": null,
-          "agentName": null,
-          "status": "pending",
-          "exitCode": null,
-          "toolUses": 0,
-          "resultFile": "/tmp/herdr-orch-XXXXXX/agent-a-result.md",
-          "startedAt": null,
-          "finishedAt": null
-        }
-      ]
-    }
-  ],
-  "reviewer": {
-    "status": "pending",
-    "agentId": null,
-    "reportFile": "/tmp/herdr-orch-XXXXXX/review-report.md"
-  }
+    { "agents": [
+      { "id": "agent-a", "label": "Subtask label", "subtask": "Full subtask description",
+        "files": ["allowed/file/paths", "dir/**"], "excludeFiles": ["*"] }
+    ] }
+  ]
 }
 ```
 
-Use short agent IDs like "agent-a", "agent-b", etc. Set the first wave's status to "running", all others to "pending".
+- `workerCmd`: the exact launcher the user named for the workers, or `null`.
+- `review`: `false` only if the user said "no review".
+- `dashboard`: `true` only if the user asked for the dashboard.
+- Agent ids: short, lowercase, like `agent-a`.
+- `files` is each agent's write zone. Agents in the same wave must not share a file.
+
+Check the plan before you create anything:
+
+```bash
+node "$PLUGIN_ROOT/scripts/plan-tool.js" check "<plan file>"
+```
+
+If it prints problems (for example two agents writing the same file), fix the plan and check again. Do not spawn with a plan that fails the check.
+
+### 6b. Create the orchestration
+
+```bash
+node "$PLUGIN_ROOT/scripts/plan-tool.js" init "<plan file>" "${TMPDIR:-/tmp}"
+```
+
+It prints `{"orchDir": "...", "id": "..."}`. Use that `orchDir` as `[orch-dir]` everywhere below. The tool created the directory and state.json (schema: id, task, status, cwd, workerCmd, mainAgent, dashboard, dashboardPaneId, waves[].agents[] with files/status/paneId/agentName/resultFile, reviewer). Never create the directory yourself.
 
 ### 6c. Generate agent prompt files
+
+In every prompt, replace `[PLUGIN_ROOT]` with the resolved plugin root, `[orch-dir]` with the orchestration directory and `[your-agent-id]` with that agent's id, so the worker can copy the command as is.
 
 First get the herdr name of every agent (needed for the Messaging section of each prompt):
 
@@ -333,21 +316,21 @@ Excluded files (you MUST NOT modify these):
 [Detailed subtask description with specific steps]
 
 ## Messaging (herdr)
-Your orchestrator is the herdr agent `orch-main`. Your teammates in this orchestration and their herdr names:
+Your orchestrator is the herdr agent `orch-main`. Your teammates:
 [One line per OTHER agent, from agent-names.sh: `- [id] ([role]) = [herdr-name]`]
 
-Send a short message from bash:
+Send a short message with the plugin's say.sh (it also records the message in the orchestration log):
 
 ```bash
-"$HERDR_BIN_PATH" agent prompt <name> "<one short line>"
+bash "[PLUGIN_ROOT]/scripts/say.sh" "[orch-dir]" "[your-agent-id]" <target-herdr-name> "<one short line>"
 ```
 
-If `$HERDR_BIN_PATH` is empty, use `herdr`. Rules:
+Rules:
 - Message `orch-main` for: a blocker, a question, an out-of-zone file you need, or "done".
-- Message a teammate directly only for names/formats you share (see the Shared Contract). Say who you are: `"agent-a: ..."`.
-- A message you receive arrives as a normal user message in your input. If it asks something, answer it the same way; if it is only information, use it and continue. Do not reply to a pure FYI.
+- Message a teammate directly only for names/formats you share (see the Shared Contract).
+- A message you receive arrives as a normal user message that starts with the sender, like `agent-a: ...`. If it asks something, answer with say.sh; if it is only information, use it and continue. Do not reply to a pure FYI.
 - Keep every message to one line. Put long content in a file and send its path.
-- Use herdr for messaging; do not use any other coordinator or messaging tool. Your result file is still the main report.
+- Use only say.sh for messaging; do not use any other coordinator or messaging tool. Your result file is still the main report.
 
 ## When You Finish
 Create your result file at: [orch-dir]/[id]-result.md
@@ -383,14 +366,14 @@ bash "$PLUGIN_ROOT/scripts/spawn-agents.sh" "[orch-dir]" 0
 ```
 
 This script:
-1. Opens the live dashboard pane at the bottom (once), while the orchestrator pane still spans the full width
+1. Opens the live dashboard pane at the bottom only if the plan asked for it (`dashboard: true`)
 2. Names this (orchestrator) agent `orch-main` so workers can message it
 3. Creates a pane per worker via `herdr pane split`, alternating right/down
 4. Starts the worker in each pane: the user's `workerCmd` typed into the pane shell, or `herdr agent start --kind claude` by default
 5. Sends each worker a short pointer prompt; the full mission is in `{orch-dir}/{id}-prompt.md`
 6. Users can watch every pane and type into any worker to intervene
 
-Do not open the dashboard by hand. Then verify agents are running:
+Then verify agents are running:
 ```bash
 herdr agent list
 ```
@@ -413,7 +396,7 @@ Spawn each agent using Claude Code's native Agent tool:
 
 Before entering the loop, note how the user sees progress:
 
-- **In herdr mode**: spawn-agents.sh already opened the live dashboard pane at the bottom. It re-reads state.json every 2 seconds. Do NOT call the text dashboard manually in herdr mode.
+- **In herdr mode**: there is no dashboard unless the plan asked for one. Show progress in the conversation after each wave (wait-wave.sh prints one line per agent). If the user wants a live view later, run `bash "$PLUGIN_ROOT/scripts/open-dashboard.sh" "[orch-dir]"`.
 
 - **In degraded mode (no herdr)**: you must print the text dashboard into Claude Code's conversation at each wave transition so the user can see progress. Run:
   ```bash
@@ -456,12 +439,17 @@ This runs `herdr agent wait <name>` per agent (settled = `idle`, `done` or `bloc
 
 1. Read each agent's result file: `[orch-dir]/[id]-result.md`
 2. Report results to the user: which agents succeeded, which failed, what they produced
-3. If there are more waves:
+3. Verify the wave with evidence (result files, sections, files changed outside the zones):
+   ```bash
+   bash "$PLUGIN_ROOT/scripts/verify-wave.sh" "[orch-dir]" N
+   ```
+   `FAIL` means an agent did not deliver (its status becomes `failed`); tell the user and ask whether to retry that agent with `herdr agent prompt` or continue. `WARN ... outside every agent's zone` means a worker touched a file it must not: show the file list and decide with the user.
+4. If there are more waves:
    a. Generate prompt files for Wave N+1 (inject previous wave results)
    b. Spawn: `bash "$PLUGIN_ROOT/scripts/spawn-agents.sh" "[orch-dir]" [N+1]`
    c. Verify with `herdr agent list`
    d. Wait again with wait-wave.sh
-4. If all waves are done, proceed to Phase 8
+5. If all waves are done, proceed to Phase 8
 
 ### Without herdr (degraded mode — Agent tool returns):
 1. Wait for all Wave N agents to complete (their Agent tool calls return)
@@ -470,16 +458,31 @@ This runs `herdr agent wait <name>` per agent (settled = `idle`, `done` or `bloc
 4. Spawn Wave N+1 agents using Agent tool
 5. Repeat until all waves complete
 
-## Phase 8: Launch Reviewer
+## Phase 8: Independent Review
 
-When all waves are complete:
+Unless the plan has `review: false`, the review is **mandatory**, even for small tasks. Do not skip it because the task looks easy; say so only if the user asked for "no review".
 
 1. Aggregate results:
 ```bash
 bash "$PLUGIN_ROOT/scripts/collect-results.sh" "[orch-dir]"
 ```
 
-2. Invoke the reviewer skill to analyze all changes and produce a final report.
+2. Start the reviewer as its own agent in its own pane (it has no memory of the workers' work, which is the point):
+```bash
+bash "$PLUGIN_ROOT/scripts/spawn-reviewer.sh" "[orch-dir]"
+```
+It starts an agent named `<orch>-reviewer`, gives it the reviewer instructions, and prints the name.
+
+3. Wait for it and read the report:
+```bash
+bash "$PLUGIN_ROOT/scripts/wait-reviewer.sh" "[orch-dir]"
+```
+It waits for the reviewer to settle, then prints the report ([orch-dir]/review-report.md) or says it is missing.
+
+4. If the report recommends fixes you can make safely, do them or ask the worker that owns the file. Then close the orchestration:
+```bash
+bash "$PLUGIN_ROOT/scripts/finish-orch.sh" "[orch-dir]"
+```
 
 ## Phase 9: Finalize
 

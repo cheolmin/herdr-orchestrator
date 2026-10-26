@@ -25,7 +25,7 @@ function activeOrch() {
     try {
       const st = fs.statSync(state);
       const data = JSON.parse(fs.readFileSync(state, 'utf8'));
-      if (data.status === 'running' && st.mtimeMs > bestTime) {
+      if (data.status === 'running' && Date.now() - st.mtimeMs < 6 * 3600 * 1000 && st.mtimeMs > bestTime) {
         best = path.join(base, name);
         bestTime = st.mtimeMs;
       }

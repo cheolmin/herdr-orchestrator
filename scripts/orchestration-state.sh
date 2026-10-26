@@ -20,8 +20,11 @@ find_active_orch() {
     local status
     status=$(node "$JSON_TOOL" get "$state" .status 2>/dev/null)
     if [ "$status" = "running" ]; then
-      local mtime
+      local mtime now
       mtime=$(stat -c %Y "$state" 2>/dev/null || stat -f %m "$state" 2>/dev/null || echo 0)
+      now=$(date +%s)
+      # No state change for 6 hours: treat as abandoned, not active.
+      [ $((now - mtime)) -gt 21600 ] && continue
       if [ "$mtime" -gt "$latest_time" ]; then
         latest="$dir"
         latest_time="$mtime"

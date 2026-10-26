@@ -261,6 +261,20 @@ if (state.reviewer && state.reviewer.status && state.reviewer.status !== 'pendin
   lines.push(c.faint('│ ') + padRight(revRow, INNER - 2) + c.faint(' │'));
 }
 
+// ─── Recent messages ────────────────────────
+try {
+  const logPath = path.join(path.dirname(stateFile), 'messages.log');
+  const msgLines = fs.readFileSync(logPath, 'utf8').split('\n')
+    .filter((l) => l && !l.includes('(delivery failed)')).slice(-3);
+  if (msgLines.length > 0) {
+    lines.push(c.faint('│ ') + ' '.repeat(INNER - 2) + c.faint(' │'));
+    lines.push(c.faint('│ ') + padRight(c.bold(c.grey('messages')), INNER - 2) + c.faint(' │'));
+    for (const m of msgLines) {
+      lines.push(c.faint('│ ') + padRight(c.faint(fit(m, INNER - 2)), INNER - 2) + c.faint(' │'));
+    }
+  }
+} catch { /* no messages yet */ }
+
 // ─── Footer ─────────────────────────────────
 lines.push(c.faint('└' + '─'.repeat(INNER) + '┘'));
 

@@ -41,10 +41,16 @@ fi
 update_state "$ORCH_DIR" '.mainAgent' "$MAIN_NAME" >/dev/null 2>&1 || true
 HERDR_BIN_UNIX="$(cygpath -u "${HERDR_BIN_PATH:-herdr}" 2>/dev/null || printf '%s' "${HERDR_BIN_PATH:-herdr}")"
 
-# Dashboard first: while the orchestrator pane still spans the full width, a
-# bottom split gives a full-width dashboard. Workers then split the top area.
-if [ "${HERDR_NO_DASHBOARD:-}" != 1 ]; then
+# Dashboard is opt-in (state.json .dashboard = true, or HERDR_DASHBOARD=1). When on,
+# open it before the workers so a bottom split spans the full width.
+WANT_DASH=$(read_state "$ORCH_DIR" '.dashboard')
+if [ "$WANT_DASH" = "true" ] || [ "${HERDR_DASHBOARD:-}" = "1" ]; then
   bash "$SCRIPT_DIR/open-dashboard.sh" "$ORCH_DIR" >/dev/null 2>&1 || true
+fi
+
+# Snapshot changed files so verify-wave.sh can tell what this wave changed.
+if [ -d "$(cygpath -u "$CWD" 2>/dev/null || printf '%s' "$CWD")/.git" ]; then
+  node "$SCRIPT_DIR/snapshot-tree.js" "$CWD" "$ORCH_DIR/tree-before-wave-$WAVE_IDX.txt" 2>/dev/null || true
 fi
 
 # Start from the orchestrator pane; split the most recent new pane each time,
@@ -119,7 +125,7 @@ while IFS= read -r agent; do
 
   # Short pointer prompt: the full mission lives in the prompt file.
   # No --wait here: wait-wave.sh waits for the whole wave afterwards.
-  PROMPT="Read the file $PROMPT_FILE and execute the mission described there exactly. Write your result file as instructed. Your orchestrator agent is named '$MAIN_NAME'. To message it, run in bash: \"$HERDR_BIN_UNIX\" agent prompt $MAIN_NAME \"<short message>\" . Use only herdr for messaging; do not use any other coordinator tool."
+  PROMPT="Read the file $PROMPT_FILE and execute the mission described there exactly. Write your result file as instructed. Your orchestrator agent is named '$MAIN_NAME'. Send messages only with say.sh as described in your prompt file (Messaging section); do not use any other coordinator tool."
   herdr agent prompt "$NAME" "$PROMPT" >/dev/null 2>&1
 
   echo "Spawned $AGENT_ID ($AGENT_LABEL) as '$NAME' in pane $PANE_ID"
