@@ -108,7 +108,7 @@ Write the report with this structure:
 [Issues that need the user's attention — empty if none]
 
 ## Recommendation
-[One of: READY TO COMMIT / NEEDS USER REVIEW / SIGNIFICANT ISSUES FOUND]
+[One of: LOOKS GOOD / NEEDS USER REVIEW / SIGNIFICANT ISSUES FOUND, plus one short sentence why]
 ```
 
 ## Step 7: Tell the orchestrator

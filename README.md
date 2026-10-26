@@ -118,7 +118,7 @@ A snapshot of the project's changed files is taken before each wave (used by the
 
 ### 5. Review
 
-Unless you said "no review", `spawn-reviewer.sh` starts the reviewer as **its own agent in its own pane**. It did not see the workers work, so it judges only from the files and the result files. It checks cross-worker consistency, runs the tests, may fix small problems (missing import, typo), and writes `review-report.md` with a recommendation: `READY TO COMMIT`, `NEEDS USER REVIEW` or `SIGNIFICANT ISSUES FOUND`.
+Unless you said "no review", `spawn-reviewer.sh` starts the reviewer as **its own agent in its own pane**. It did not see the workers work, so it judges only from the files and the result files. It checks cross-worker consistency, runs the tests, may fix small problems (missing import, typo), and writes `review-report.md` with a recommendation: `LOOKS GOOD`, `NEEDS USER REVIEW` or `SIGNIFICANT ISSUES FOUND`.
 
 `finish-orch.sh` then marks the run `complete`.
 

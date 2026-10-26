@@ -63,7 +63,7 @@ BRIEF="$ORCH_DIR/reviewer-prompt.md"
   echo "- State: $ORCH_DIR/state.json"
   echo "- Write your report to: $ORCH_DIR/review-report.md"
   echo "- Orchestrator agent: $MAIN_NAME. When the report is written, send ONE line:"
-  echo "  bash \"$SCRIPT_DIR/say.sh\" \"$ORCH_DIR\" reviewer $MAIN_NAME \"review done: <READY TO COMMIT | NEEDS USER REVIEW | SIGNIFICANT ISSUES FOUND>\""
+  echo "  bash \"$SCRIPT_DIR/say.sh\" \"$ORCH_DIR\" reviewer $MAIN_NAME \"review done: <LOOKS GOOD | NEEDS USER REVIEW | SIGNIFICANT ISSUES FOUND>\""
   echo "- Do not message anyone else. Use only say.sh for messaging."
   echo
   echo "You are a fresh reviewer: you did not see the workers work. Judge only from the files and the results."

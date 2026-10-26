@@ -488,10 +488,12 @@ bash "$PLUGIN_ROOT/scripts/finish-orch.sh" "[orch-dir]"
 
 ## Phase 9: Finalize
 
-After the reviewer completes, present a summary:
-- Total time elapsed
-- Agents used, waves completed
-- Files modified (from `git diff --stat`)
-- Test results (if reviewer ran tests)
-- Reviewer findings and corrections
-- Offer actions: **commit** / **view full diff** / **abort all changes**
+After the reviewer completes, tell the user the result in a few short lines:
+- What was built or changed, and where (the files, from the result files)
+- Whether it works (test or run result from the reviewer and the workers)
+- Time elapsed, workers used, waves completed
+- Review verdict and anything that still needs attention (from `Remaining Issues`)
+
+Then suggest **next steps that fit this task**, based on what you just saw. Examples: run the app or the tests and show the output, fix a remaining issue the reviewer listed, add a missing feature, split a large file, write docs. Offer two or three, short.
+
+Do **not** offer to commit, push, or revert by default, and never offer "abort all changes": workers share one working tree that may hold the user's own changes. Commit only if the user asks for it.
