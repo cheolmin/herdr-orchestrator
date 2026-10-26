@@ -77,8 +77,32 @@ function fmtShort(ms) {
 }
 
 // visible length ignoring ANSI escape sequences
+// Display width: East Asian wide chars take 2 columns.
+function cw(ch) {
+  const c = ch.codePointAt(0);
+  if ((c >= 0x1100 && c <= 0x115f) || (c >= 0x2e80 && c <= 0xa4cf) || (c >= 0xac00 && c <= 0xd7a3) ||
+      (c >= 0xf900 && c <= 0xfaff) || (c >= 0xfe30 && c <= 0xfe6f) || (c >= 0xff00 && c <= 0xff60) ||
+      (c >= 0xffe0 && c <= 0xffe6) || (c >= 0x1f300 && c <= 0x1faff)) return 2;
+  return 1;
+}
+
 function vlen(s) {
-  return s.replace(/\x1b\[[0-9;]*m/g, '').length;
+  let n = 0;
+  for (const ch of s.replace(/\x1b\[[0-9;]*m/g, '')) n += cw(ch);
+  return n;
+}
+
+// Cut a plain string to at most `max` display columns.
+function fit(s, max) {
+  let out = '';
+  let n = 0;
+  for (const ch of s) {
+    const w = cw(ch);
+    if (n + w > max) break;
+    out += ch;
+    n += w;
+  }
+  return out;
 }
 
 function padRight(s, n) {
@@ -116,7 +140,12 @@ function runStatusLabel(status) {
 
 // ─── Render ────────────────────────────────────────────────────────────────
 
-const WIDTH = compact ? 58 : 68;
+// Fit the pane: the plugin pane passes its width via COLUMNS (or --width=N).
+const widthArg = args.find((a) => a.startsWith('--width='));
+const termCols = widthArg ? parseInt(widthArg.slice(8), 10) : parseInt(process.env.COLUMNS || '', 10);
+const WIDTH = Number.isFinite(termCols) && termCols > 0
+  ? Math.max(30, Math.min(termCols, 100))
+  : (compact ? 58 : 68);
 const INNER = WIDTH - 2; // minus the two border chars
 
 const now = Date.now();
@@ -138,14 +167,16 @@ const currentWaveIdx = (() => {
 const lines = [];
 
 // ─── Header ─────────────────────────────────
-const titleLeft = `${c.bold(c.amber('herdr'))} ${c.faint('•')} ${c.amber('orchestration')}`;
+const titleLeft = INNER >= 40
+  ? `${c.bold(c.amber('herdr'))} ${c.faint('•')} ${c.amber('orchestration')}`
+  : c.bold(c.amber('herdr'));
 const statusRight = runStatusLabel(state.status);
-const topHeaderText = `${titleLeft}   ${statusRight}`;
-const headerPadding = INNER - vlen(topHeaderText) - 2;
+const topHeaderText = `${titleLeft} ${statusRight}`;
+const headerPadding = INNER - vlen(topHeaderText) - 3;
 lines.push(c.faint('┌─ ') + topHeaderText + ' ' + c.faint('─'.repeat(Math.max(1, headerPadding))) + c.faint(' ┐'));
 
 // ─── Task ───────────────────────────────────
-const taskText = (state.task || '').slice(0, INNER - 4);
+const taskText = fit(state.task || '', INNER - 4);
 lines.push(c.faint('│ ') + padRight(c.white(taskText), INNER - 2) + c.faint(' │'));
 
 // ─── Meta row ───────────────────────────────
@@ -187,7 +218,8 @@ for (const wave of state.waves || []) {
 
   for (const agent of agents) {
     const dot = agentDot(agent.status, agent.exitCode);
-    const label = (agent.label || agent.id || '').slice(0, 26);
+    const LABEL_W = Math.max(8, Math.min(26, INNER - 24));
+    const label = fit(agent.label || agent.id || '', LABEL_W);
     const started = agent.startedAt ? parseIso(agent.startedAt) : 0;
     const finished = agent.finishedAt ? parseIso(agent.finishedAt) : null;
     const durMs = started > 0 ? (finished ?? now) - started : 0;
@@ -203,12 +235,12 @@ for (const wave of state.waves || []) {
     }
 
     const labelColored = agent.status === 'running'
-      ? c.white(padRight(label, 26))
+      ? c.white(padRight(label, LABEL_W))
       : agent.status === 'exited'
-        ? c.grey(padRight(label, 26))
-        : c.faint(padRight(label, 26));
+        ? c.grey(padRight(label, LABEL_W))
+        : c.faint(padRight(label, LABEL_W));
 
-    const row = `  ${dot} ${labelColored}${metaStr}`;
+    const row = `  ${dot} ${labelColored} ${metaStr}`;
     lines.push(c.faint('│ ') + padRight(row, INNER - 2) + c.faint(' │'));
   }
 }

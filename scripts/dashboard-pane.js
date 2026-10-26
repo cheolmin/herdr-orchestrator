@@ -29,7 +29,8 @@ function draw() {
   process.stdout.write('\x1b[2J\x1b[H');
   const dir = activeOrch();
   if (!dir) { process.stdout.write('No active orchestration.\n'); return; }
-  const r = spawnSync(process.execPath, [dashboard, dir], { encoding: 'utf8' });
+  const cols = process.stdout.columns || 0;
+  const r = spawnSync(process.execPath, [dashboard, dir, cols ? '--width=' + cols : '--compact'], { encoding: 'utf8' });
   process.stdout.write(r.stdout || r.stderr || '');
 }
 

@@ -41,6 +41,12 @@ fi
 update_state "$ORCH_DIR" '.mainAgent' "$MAIN_NAME" >/dev/null 2>&1 || true
 HERDR_BIN_UNIX="$(cygpath -u "${HERDR_BIN_PATH:-herdr}" 2>/dev/null || printf '%s' "${HERDR_BIN_PATH:-herdr}")"
 
+# Dashboard first: while the orchestrator pane still spans the full width, a
+# bottom split gives a full-width dashboard. Workers then split the top area.
+if [ "${HERDR_NO_DASHBOARD:-}" != 1 ]; then
+  bash "$SCRIPT_DIR/open-dashboard.sh" "$ORCH_DIR" >/dev/null 2>&1 || true
+fi
+
 # Start from the orchestrator pane; split the most recent new pane each time,
 # alternating direction so panes stay usable.
 TARGET="${HERDR_PANE_ID:-}"

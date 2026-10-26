@@ -367,24 +367,19 @@ bash "$PLUGIN_ROOT/scripts/spawn-agents.sh" "[orch-dir]" 0
 ```
 
 This script:
-1. Creates a pane per agent via `herdr pane split`
-2. Runs `node launch-agent.js <prompt-file>` in each pane
-3. `launch-agent.js` uses `execFileSync` with `'--'` separator to pass the full prompt as a positional argument — this bypasses all shell quoting issues
-4. Claude starts in **interactive mode with full TUI** — the prompt auto-submits and Claude begins working immediately
-5. The user can watch agents in real-time by clicking their pane tabs, and can type into any agent to intervene
+1. Opens the live dashboard pane at the bottom (once), while the orchestrator pane still spans the full width
+2. Names this (orchestrator) agent `orch-main` so workers can message it
+3. Creates a pane per worker via `herdr pane split`, alternating right/down
+4. Starts the worker in each pane: the user's `workerCmd` typed into the pane shell, or `herdr agent start --kind claude` by default
+5. Sends each worker a short pointer prompt; the full mission is in `{orch-dir}/{id}-prompt.md`
+6. Users can watch every pane and type into any worker to intervene
 
-Right after spawning Wave 1, open the dashboard at the bottom (once per orchestration):
-
-```bash
-bash "$PLUGIN_ROOT/scripts/open-dashboard.sh"
-```
-
-Then verify agents are running:
+Do not open the dashboard by hand. Then verify agents are running:
 ```bash
 herdr agent list
 ```
 
-You should see agents with `"status": "running"`.
+You should see the workers with `"agent_status": "working"`.
 
 **If herdr is NOT available (degraded mode only):**
 
@@ -402,11 +397,7 @@ Spawn each agent using Claude Code's native Agent tool:
 
 Before entering the loop, note how the user sees progress:
 
-- **In herdr mode**: open the live dashboard pane once, at the bottom, right after spawning Wave 1 (skip if one is already open):
-  ```bash
-  bash "$PLUGIN_ROOT/scripts/open-dashboard.sh"
-  ```
-  It re-reads state.json every 2 seconds. Do NOT call the text dashboard manually in herdr mode.
+- **In herdr mode**: spawn-agents.sh already opened the live dashboard pane at the bottom. It re-reads state.json every 2 seconds. Do NOT call the text dashboard manually in herdr mode.
 
 - **In degraded mode (no herdr)**: you must print the text dashboard into Claude Code's conversation at each wave transition so the user can see progress. Run:
   ```bash
