@@ -134,3 +134,10 @@ parse_json() {
   local path="$2"
   node "$JSON_TOOL" parse-json "$json_str" "$path" 2>/dev/null
 }
+
+# Make `herdr` callable even when it is not on PATH. herdr injects HERDR_BIN_PATH
+# (a Windows path on Windows) into every pane it manages.
+if ! command -v herdr &>/dev/null && [ -n "${HERDR_BIN_PATH:-}" ]; then
+  _HERDR_BIN="$(cygpath -u "$HERDR_BIN_PATH" 2>/dev/null || printf '%s' "$HERDR_BIN_PATH")"
+  herdr() { "$_HERDR_BIN" "$@"; }
+fi
