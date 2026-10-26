@@ -1,0 +1,7 @@
+{
+  "name": "herdr-orchestrator",
+  "version": "0.1.0",
+  "description": "Multi-agent task orchestration for Claude Code with herdr visual panes",
+  "author": "cheolmin",
+  "license": "MIT"
+}

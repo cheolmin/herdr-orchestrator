@@ -1,0 +1,13 @@
+id = "cheolmin.herdr-orchestrator"
+name = "Herdr Orchestrator"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Live dashboard pane for multi-agent orchestrations started by the herdr-orchestrator Claude Code plugin"
+platforms = ["linux", "macos", "windows"]
+
+[[panes]]
+id = "dashboard"
+title = "Orchestration dashboard"
+description = "Live view of the active orchestration (waves, agents, progress)"
+placement = "split"
+command = ["node", "scripts/dashboard-pane.js"]

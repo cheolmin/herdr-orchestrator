@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "herdr-orchestrator",
+  "description": "Multi-agent orchestration plugins for herdr — parallel Claude Code agents with visual terminal panes",
+  "owner": {
+    "name": "cheolmin",
+    "email": "cheolmin@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "herdr-orchestrator",
+      "description": "Decomposes complex dev tasks into parallel Claude Code agents coordinated through dependency-aware waves with automated review.",
+      "category": "development",
+      "source": "./",
+      "author": {
+        "name": "cheolmin"
+      },
+      "homepage": "https://github.com/cheolmin/herdr-orchestrator"
+    }
+  ]
+}

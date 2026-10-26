@@ -1,0 +1,13 @@
+{
+  "name": "herdr-orchestrator",
+  "description": "Multi-agent task orchestration with visual terminal panes. Decomposes complex dev tasks into parallel Claude Code instances coordinated through dependency-aware waves.",
+  "version": "0.1.2",
+  "author": {
+    "name": "cheolmin",
+    "email": "cheolmin@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/cheolmin/herdr-orchestrator",
+  "repository": "https://github.com/cheolmin/herdr-orchestrator",
+  "license": "MIT",
+  "keywords": ["orchestration", "multi-agent", "parallel", "terminal", "herdr"]
+}
