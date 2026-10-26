@@ -19,6 +19,10 @@ fi
 CWD=$(read_state "$ORCH_DIR" '.cwd')
 [ -z "$CWD" ] || [ "$CWD" = "null" ] && CWD="$(pwd)"
 ORCH_ID=$(read_state "$ORCH_DIR" '.id')
+# Worker launcher: state.json .workerCmd (set from the user's request) wins,
+# then the HERDR_WORKER_CMD environment variable, else plain claude.
+WORKER_CMD=$(read_state "$ORCH_DIR" '.workerCmd')
+{ [ -z "$WORKER_CMD" ] || [ "$WORKER_CMD" = "null" ]; } && WORKER_CMD="${HERDR_WORKER_CMD:-}"
 SHORT=$(printf '%s' "$ORCH_ID" | tr -c 'a-z0-9\n' '-' | tr 'A-Z' 'a-z' | cut -c1-8)
 
 # Agent names must match [a-z][a-z0-9_-]{0,31}
@@ -52,7 +56,7 @@ while IFS= read -r agent; do
   fi
 
   START_RESULT=""
-  if [ -n "${HERDR_WORKER_CMD:-}" ]; then
+  if [ -n "$WORKER_CMD" ]; then
     # User-defined launcher (e.g. a PowerShell function like ccc-sonnet-skip).
     # herdr detects the agent from the running process; name it afterwards.
     for _try in 1 2 3 4 5 6 7 8; do
@@ -60,7 +64,7 @@ while IFS= read -r agent; do
       sleep 1
     done
     sleep 2
-    herdr pane run "$PANE_ID" "$HERDR_WORKER_CMD" >/dev/null 2>&1
+    herdr pane run "$PANE_ID" "$WORKER_CMD" >/dev/null 2>&1
     READY=""
     for _try in $(seq 1 30); do
       sleep 2

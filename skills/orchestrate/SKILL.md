@@ -44,6 +44,10 @@ If degraded, log to the user:
 If herdr mode, log to the user:
 > "herdr detected. Agents will spawn in visible terminal panes."
 
+### Worker launcher (herdr mode)
+
+If the user's request names a launcher for the workers (for example "use ccc-sonnet-skip for the workers", "워커는 ccc-sonnet-skip으로"), put that exact command in state.json as `"workerCmd"`. spawn-agents.sh types it into each new pane's shell. Do not add flags and do not rewrite it. If the user names none, leave `workerCmd` as null (workers start with `claude --dangerously-skip-permissions`, or `$HERDR_WORKER_CMD` if set).
+
 ## Phase 2: Analyze the Codebase
 
 Before decomposing, understand what the task involves:
@@ -251,6 +255,7 @@ Write `state.json` using the Write tool. Schema:
   "cwd": "project working directory",
   "workspaceId": null,
   "dashboardPaneId": null,
+  "workerCmd": null,
   "useWorktrees": false,
   "waves": [
     {
@@ -378,7 +383,11 @@ Spawn each agent using Claude Code's native Agent tool:
 
 Before entering the loop, note how the user sees progress:
 
-- **In herdr mode**: the user can open the live dashboard pane once with `herdr plugin pane` (plugin `cheolmin.herdr-orchestrator`, pane `dashboard`). It re-reads state.json every 2 seconds. Do NOT call the text dashboard manually in herdr mode.
+- **In herdr mode**: open the live dashboard pane once, at the bottom, right after spawning Wave 1 (skip if one is already open):
+  ```bash
+  bash "$PLUGIN_ROOT/scripts/open-dashboard.sh"
+  ```
+  It re-reads state.json every 2 seconds. Do NOT call the text dashboard manually in herdr mode.
 
 - **In degraded mode (no herdr)**: you must print the text dashboard into Claude Code's conversation at each wave transition so the user can see progress. Run:
   ```bash

@@ -12,11 +12,10 @@ claude plugin marketplace add cheolmin/herdr-orchestrator
 claude plugin install herdr-orchestrator@herdr-orchestrator
 ```
 
-Optional dashboard pane (herdr plugin):
+Optional dashboard pane (herdr plugin). The orchestrator opens it at the bottom of your tab:
 
 ```bash
-herdr plugin link <path-to-this-repo>
-herdr plugin pane open --plugin cheolmin.herdr-orchestrator --entrypoint dashboard --placement split
+herdr plugin install cheolmin/herdr-orchestrator
 ```
 
 ## Usage
@@ -32,16 +31,18 @@ Start Claude Code **inside a herdr pane**, then:
 - Claude Code CLI, Node.js, bash
 - herdr (for visual multi-pane mode)
 
+## Choosing the worker launcher
+
+Say it in the request, the same way you would in wmux:
+
+```
+/herdr-orchestrator:orchestrate <task>. Use ccc-sonnet-skip for the workers.
+```
+
+The command is typed into each new pane's shell, so it must exist there (for example a PowerShell function). herdr detects the agent from the process, then the plugin names it.
+
+Without it, workers start with `claude --dangerously-skip-permissions`. You can also set `HERDR_WORKER_CMD` as a default.
+
 ## License
 
 MIT
-
-## Custom worker command
-
-By default workers start with `claude --dangerously-skip-permissions`. To use your own launcher (for example a PowerShell function such as `ccc-sonnet-skip`), set `HERDR_WORKER_CMD` before starting Claude Code:
-
-```powershell
-$env:HERDR_WORKER_CMD = "ccc-sonnet-skip"
-```
-
-The command is typed into each new pane's shell, so it must exist in that shell. herdr detects the agent from the process and the plugin then names it.
