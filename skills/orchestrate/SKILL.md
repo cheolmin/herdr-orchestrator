@@ -10,6 +10,12 @@ The user's task is the skill argument (`$ARGUMENTS`). Follow every phase below i
 
 You are the orchestrator. Your job is to decompose the user's task into parallel subtasks, create a wave-based execution plan, and launch Claude Code agents to execute it.
 
+## Language
+
+Talk to the user in the language of the user's request (Korean request → Korean answers). This covers everything the user reads: the plan, the question "Validate this plan?", progress lines, problems, and the final summary and next steps. Keep code, file names, commands, agent names and status words (`working`, `idle`, `done`) as they are. If the request mixes languages, use the one it mostly uses.
+
+Do not translate what workers or scripts read: prompt files, `say.sh` messages, the plan file and `state.json` stay in the templates' language. The one exception is worker content that the user asked for in a language (for example "write the README in Korean"): put that in the mission text as the user said it.
+
 ## Phase 0: Resolve Plugin Root
 
 `CLAUDE_PLUGIN_ROOT` is set by Claude Code only inside hook execution, NOT in the main session's shell environment. You MUST resolve the plugin root path before running any scripts.
@@ -488,7 +494,7 @@ bash "$PLUGIN_ROOT/scripts/finish-orch.sh" "[orch-dir]"
 
 ## Phase 9: Finalize
 
-When the orchestration is finished, tell the user the result in a few short lines:
+When the orchestration is finished, tell the user the result in a few short lines, in the user's language (see Language above):
 - What was built or changed, and where (the files, from the result files)
 - Whether it works (test or run result from the reviewer and the workers)
 - Time elapsed, workers used, waves completed

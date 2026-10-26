@@ -65,6 +65,8 @@ Example:
 for the workers. Go ahead without asking.
 ```
 
+The orchestrator answers in the language of your request (a Korean request gets Korean plans, progress lines and a Korean summary). Code, file names, commands and agent names stay as they are. What workers and scripts read (prompt files, `say.sh` messages) stays in English.
+
 If you are **not** inside herdr, the plugin says so and falls back to Claude Code's built-in subagents (invisible, no panes, no messaging between workers).
 
 ---
