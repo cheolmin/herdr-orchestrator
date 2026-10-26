@@ -9,7 +9,7 @@
 //
 // Plan file (written by the orchestrator with the Write tool):
 //   { "task": "...", "cwd": "C:/proj", "workerCmd": "ccc-sonnet-skip" | null,
-//     "review": true, "dashboard": false,
+//     "review": false, "dashboard": false,
 //     "waves": [ { "agents": [ { "id":"agent-a", "label":"...", "subtask":"...",
 //                                "files":["src/a.js"], "excludeFiles":["*"] } ] } ] }
 //
@@ -128,7 +128,7 @@ const state = {
     })),
   })),
   reviewer: {
-    status: plan.review === false ? 'skipped' : 'pending',
+    status: plan.review === true ? 'pending' : 'skipped',
     agentName: null,
     reportFile: norm(path.join(dir, 'review-report.md')),
   },

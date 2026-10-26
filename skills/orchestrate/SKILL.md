@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Orchestrate a complex dev task as parallel Claude Code agents in herdr panes, in dependency-ordered waves with automated review. Use when the user runs /herdr-orchestrator:orchestrate or asks to split work across multiple herdr worker agents. The text after the command is the task; a named worker launcher (e.g. ccc-sonnet-skip) goes into workerCmd.
+description: Orchestrate a complex dev task as parallel Claude Code agents in herdr panes, in dependency-ordered waves. An independent review is available on request. Use when the user runs /herdr-orchestrator:orchestrate or asks to split work across multiple herdr worker agents. The text after the command is the task; a named worker launcher (e.g. ccc-sonnet-skip) goes into workerCmd.
 argument-hint: <task description>
 ---
 
@@ -223,7 +223,7 @@ Wave 3 (after Wave 2) — [description]
 
 Options (say the word to change them):
   dashboard: off (default) — a live dashboard pane at the bottom; say "dashboard" to turn it on
-  review: on (default) — an independent reviewer agent checks the result; say "no review" to skip it
+  review: off (default) — an independent reviewer agent checks the result; say "review" to turn it on
 ```
 
 Skip this question only if the user's request clearly says to go ahead without confirmation (for example "go ahead without asking", "확인 없이 진행", "계획은 바로 진행해"). Still print the plan so the user can see it. Without that, wait for approval.
@@ -257,7 +257,7 @@ Write the plan as JSON with the Write tool to `${TMPDIR:-/tmp}/herdr-plan-<rando
 ```
 
 - `workerCmd`: the exact launcher the user named for the workers, or `null`.
-- `review`: `false` only if the user said "no review".
+- `review`: `true` only if the user asked for a review (for example "review it", "리뷰도 해줘"). Default `false`.
 - `dashboard`: `true` only if the user asked for the dashboard.
 - Agent ids: short, lowercase, like `agent-a`.
 - `files` is each agent's write zone. Agents in the same wave must not share a file.
@@ -462,7 +462,7 @@ This runs `herdr agent wait <name>` per agent (settled = `idle`, `done` or `bloc
 
 ## Phase 8: Independent Review
 
-Unless the plan has `review: false`, the review is **mandatory**, even for small tasks. Do not skip it because the task looks easy; say so only if the user asked for "no review".
+This phase runs only if the plan has `review: true`. If the plan has `review: false` (the default), skip steps 2-3 and go to step 4 (aggregate results if you want a combined view, then finish). Do not start a reviewer on your own, and do not offer one unless the user seems unsure about the result.
 
 1. Aggregate results:
 ```bash
@@ -481,18 +481,18 @@ bash "$PLUGIN_ROOT/scripts/wait-reviewer.sh" "[orch-dir]"
 ```
 It waits for the reviewer to settle, then prints the report ([orch-dir]/review-report.md) or says it is missing.
 
-4. If the report recommends fixes you can make safely, do them or ask the worker that owns the file. Then close the orchestration:
+4. If a review ran and its report recommends fixes you can make safely, do them or ask the worker that owns the file. Then close the orchestration (always, with or without a review):
 ```bash
 bash "$PLUGIN_ROOT/scripts/finish-orch.sh" "[orch-dir]"
 ```
 
 ## Phase 9: Finalize
 
-After the reviewer completes, tell the user the result in a few short lines:
+When the orchestration is finished, tell the user the result in a few short lines:
 - What was built or changed, and where (the files, from the result files)
 - Whether it works (test or run result from the reviewer and the workers)
 - Time elapsed, workers used, waves completed
-- Review verdict and anything that still needs attention (from `Remaining Issues`)
+- If a review ran: its verdict and anything that still needs attention (from `Remaining Issues`). If no review ran, say what you verified yourself (verify-wave results) and do not pretend it was reviewed
 
 Then suggest **next steps that fit this task**, based on what you just saw. Examples: run the app or the tests and show the output, fix a remaining issue the reviewer listed, add a missing feature, split a large file, write docs. Offer two or three, short.
 

@@ -8,7 +8,7 @@ You give one request. The plugin:
 2. shows you the plan and waits for your OK,
 3. opens one herdr pane per worker and starts a Claude Code agent in each,
 4. waits for each wave, **verifies** it, and starts the next wave,
-5. starts a **separate reviewer agent**, reads its report, and closes the run.
+5. optionally starts a **separate reviewer agent** (only if you ask), then closes the run.
 
 > Based on [amirlehmam/wmux-orchestrator](https://github.com/amirlehmam/wmux-orchestrator) (MIT), ported from wmux to the herdr CLI.
 
@@ -54,7 +54,7 @@ Add options in plain words, in the same sentence:
 |---|---|
 | `Use ccc-sonnet-skip for the workers.` | Workers are started with that launcher (see below) |
 | `Turn on the dashboard.` | Opens the live dashboard pane at the bottom |
-| `No review.` | Skips the reviewer (otherwise it is **mandatory**) |
+| `Review it.` (or "리뷰도 해줘") | Starts an independent reviewer after the last wave (**off by default**) |
 | `Go ahead without asking.` (or "확인 없이 진행") | Prints the plan but skips the "Validate this plan?" question |
 
 Example:
@@ -116,9 +116,9 @@ A snapshot of the project's changed files is taken before each wave (used by the
 | result file has `Summary` and `Files Modified` | `WARN` if missing |
 | no file changed outside **every** worker's zone | `WARN` with the file list |
 
-### 5. Review
+### 5. Review (optional, off by default)
 
-Unless you said "no review", `spawn-reviewer.sh` starts the reviewer as **its own agent in its own pane**. It did not see the workers work, so it judges only from the files and the result files. It checks cross-worker consistency, runs the tests, may fix small problems (missing import, typo), and writes `review-report.md` with a recommendation: `LOOKS GOOD`, `NEEDS USER REVIEW` or `SIGNIFICANT ISSUES FOUND`.
+Only if you asked for a review, `spawn-reviewer.sh` starts the reviewer as **its own agent in its own pane**. It did not see the workers work, so it judges only from the files and the result files. It checks cross-worker consistency, runs the tests, may fix small problems (missing import, typo), and writes `review-report.md` with a recommendation: `LOOKS GOOD`, `NEEDS USER REVIEW` or `SIGNIFICANT ISSUES FOUND`.
 
 `finish-orch.sh` then marks the run `complete`.
 
