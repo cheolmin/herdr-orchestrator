@@ -226,9 +226,11 @@ Options (say the word to change them):
   review: on (default) — an independent reviewer agent checks the result; say "no review" to skip it
 ```
 
+Skip this question only if the user's request clearly says to go ahead without confirmation (for example "go ahead without asking", "확인 없이 진행", "계획은 바로 진행해"). Still print the plan so the user can see it. Without that, wait for approval.
+
 Ask the user: **"Validate this plan? (yes / adjust / cancel)"**
 
-Wait for user approval. If they want adjustments, modify the plan and re-present. Do NOT proceed without explicit approval.
+Wait for user approval. If they want adjustments, modify the plan and re-present. Do NOT proceed without explicit approval, except in the "go ahead without asking" case above.
 
 ## Phase 6: Initialize Orchestration
 
