@@ -1,9 +1,12 @@
 ---
 name: orchestrate
-description: Core orchestration skill. Analyzes codebase, decomposes tasks into waves of parallel agents, creates herdr layout, spawns agents, monitors progress, triggers reviewer.
+description: Orchestrate a complex dev task as parallel Claude Code agents in herdr panes, in dependency-ordered waves with automated review. Use when the user runs /herdr-orchestrator:orchestrate or asks to split work across multiple herdr worker agents. The text after the command is the task; a named worker launcher (e.g. ccc-sonnet-skip) goes into workerCmd.
+argument-hint: <task description>
 ---
 
 # herdr Orchestration Skill
+
+The user's task is the skill argument (`$ARGUMENTS`). Follow every phase below in order. Run the plugin scripts with bash; do not look for `herdr` or the worker launcher yourself — `detect-herdr.sh` and `spawn-agents.sh` find herdr, and the worker launcher is typed into a pane's own shell.
 
 You are the orchestrator. Your job is to decompose the user's task into parallel subtasks, create a wave-based execution plan, and launch Claude Code agents to execute it.
 
